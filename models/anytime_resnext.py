@@ -61,7 +61,7 @@ class AnytimeGrouppedBlock(nn.Module):
         return x
 
 class AnytimeResNeXt(nn.Module):
-    def __init__(self, num_blocks=3, num_classes=10, width=64, bottleneck=4, cardinality=8, anytime=4, init=False):
+    def __init__(self, num_blocks=3, num_classes=10, width=64, bottleneck=4, cardinality=8, anytime=8, init=False):
         super(AnytimeResNeXt, self).__init__()
         self.num_blocks = num_blocks
         self.anytime = anytime

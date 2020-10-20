@@ -20,14 +20,14 @@ def parse_args(parser=None):
 
     # dataset arguments
     parser.add_argument('--dataset', type=str, default='cifar10')
-    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--valsize', type=int, default=5000)
 
     # optimization arguments
     parser.add_argument('--lr', type=float, default=0.1)
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--wd', type=float, default=0.0001)
-    parser.add_argument('--num_epochs', type=int, default=200)
+    parser.add_argument('--num_epochs', type=int, default=300)
     parser.add_argument('--nesterov', action='store_true')
 
     # parse arguments

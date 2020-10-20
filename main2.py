@@ -1,7 +1,6 @@
 import torch
 import operator
 import torch.nn as nn, torch.optim as optim
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
 import models
@@ -74,10 +73,10 @@ def train(epoch, dataloader):
     error_average = ClassErrorMeter()
     for i, (images, labels) in enumerate(dataloader):
         n = images.size()[0]
-        y = model(Variable(images.cuda()))
+        y = model(images.cuda())
 
         optimizer.zero_grad()
-        loss = criterion(y, Variable(labels.cuda()))
+        loss = criterion(y, labels.cuda())
         loss_average.add(loss.data[0], n)
         error = error_average.add(y.cpu().data, labels)
         loss.backward()
@@ -99,9 +98,9 @@ def test(epoch, dataloader, val=False):
     for i, (images, labels) in enumerate(dataloader):
         with torch.no_grad():
             n = images.size()[0]
-            y = model(Variable(images.cuda()))
+            y = model(images.cuda())
 
-            loss = criterion(y, Variable(labels.cuda()))
+            loss = criterion(y, labels.cuda())
             loss_average.add(loss.data[0], n)
             error = error_average.add(y.cpu().data, labels)
 
