@@ -9,8 +9,6 @@ from utils import Logger, AverageMeter, ClassErrorMeter
 from datasets import get_dataset
 from utils.measure_v2 import measure
 
-import argparse
-
 torch.backends.cudnn.benchmark = True
 
 ###########################
@@ -18,10 +16,7 @@ torch.backends.cudnn.benchmark = True
 ###########################
 
 # parse arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('--add_wd_low', type=float, default=0.0)
-parser.add_argument('--add_wd_high', type=float, default=0.0)
-args, model_args = parse_args(parser)
+args, model_args = parse_args()
 
 # define logger
 logdir = args.logdir
@@ -31,7 +26,7 @@ logger.log('model args: %s'%str(model_args))
 
 # define model
 model = models.get_model(args.model, model_args).cuda()
-logger.log('full-model FLOPs: %d'%measure(model, torch.zeros(1, 3, 32, 32).cuda(), k=-1)[0])
+# logger.log('full-model FLOPs: %d' % measure(model, torch.zeros(1, 3, 32, 32).cuda(), k=-1)[0])
 
 # define datasets - 0: train, 1: val, 2: test
 datasets = get_dataset(args.dataset, val_size=args.valsize)
@@ -87,31 +82,9 @@ def train(epoch, dataloader):
             y = model(Variable(images.cuda()), k)
 
             loss = criterion(y, Variable(labels.cuda()))
-            losses.append(loss_average[k].add(loss.data[0], n))
+            losses.append(loss_average[k].add(loss.item(), n))
             errors.append(error_average[k].add(y.cpu().data, labels))
             loss.backward()
-
-        reg = 0.0
-        c = model.anytime
-        low, high = args.add_wd_low, args.add_wd_high
-        if low < high:
-            wds = torch.arange(low, high+1e-8, step=(high-low)/float(c-1))
-            wds = Variable(wds.view(c, 1).cuda())
-            for stage in model.stages:
-                for block in stage:
-                    for name in ['conv1', 'conv2']:
-                        m = block._modules[name]
-                        for param in m.parameters():
-                            reg = reg + param.pow(2).view(c, -1).mul(wds).sum()
-                    h = block.conv3.weight.size(0)
-                    reg = reg + block.conv3.weight.pow(2).view(h, c, -1).mul(wds.view(1, c, 1)).sum()
-
-                    for name in ['bn2', 'bn3']:
-                        for k in range(model.anytime):
-                            m = block._modules[name][k]
-                            for param in m.parameters():
-                                reg = reg + param.pow(2).view(k+1, -1).mul(wds[:k+1]).sum()
-            reg.backward()
 
         optimizer.step()
         log_iter(epoch, 'train', i, losses, errors)
@@ -136,7 +109,7 @@ def test(epoch, dataloader, val=False):
                 y = model(Variable(images.cuda()), k)
 
                 loss = criterion(y, Variable(labels.cuda()))
-                losses.append(loss_average[k].add(loss.data[0], n))
+                losses.append(loss_average[k].add(loss.item(), n))
                 errors.append(error_average[k].add(y.cpu().data, labels))
 
             log_iter(epoch, mode, i, losses, errors)

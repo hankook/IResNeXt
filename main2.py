@@ -1,5 +1,4 @@
 import torch
-import operator
 import torch.nn as nn, torch.optim as optim
 from torch.utils.data import DataLoader
 
@@ -7,6 +6,7 @@ import models
 from options import parse_args
 from utils import Logger, AverageMeter, ClassErrorMeter
 from datasets import get_dataset
+from utils.measure_v2 import measure
 
 torch.backends.cudnn.benchmark = True
 
@@ -25,8 +25,7 @@ logger.log('model args: %s'%str(model_args))
 
 # define model
 model = models.__dict__[args.model](**vars(model_args)).cuda()
-num_params = sum([reduce(operator.mul, i.size(), 1) for i in model.parameters()])
-logger.log('model params: %d'%num_params)
+# logger.log('full-model FLOPs: %d' % measure(model, torch.zeros(1, 3, 32, 32).cuda())[0])
 
 # define datasets - 0: train, 1: val, 2: test
 datasets = get_dataset(args.dataset, val_size=args.valsize)
@@ -77,12 +76,12 @@ def train(epoch, dataloader):
 
         optimizer.zero_grad()
         loss = criterion(y, labels.cuda())
-        loss_average.add(loss.data[0], n)
+        loss_average.add(loss.item(), n)
         error = error_average.add(y.cpu().data, labels)
         loss.backward()
         optimizer.step()
 
-        log_iter(epoch, 'train', i, loss.data[0], error)
+        log_iter(epoch, 'train', i, loss.item(), error)
 
     log_epoch(epoch, 'train', loss_average(), error_average())
     return error_average()
@@ -101,10 +100,10 @@ def test(epoch, dataloader, val=False):
             y = model(images.cuda())
 
             loss = criterion(y, labels.cuda())
-            loss_average.add(loss.data[0], n)
+            loss_average.add(loss.item(), n)
             error = error_average.add(y.cpu().data, labels)
 
-            log_iter(epoch, mode, i, loss.data[0], error)
+            log_iter(epoch, mode, i, loss.item(), error)
 
     log_epoch(epoch, mode, loss_average(), error_average())
     return error_average()
